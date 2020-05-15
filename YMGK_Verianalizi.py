@@ -10,6 +10,7 @@ import datetime
 import numpy as np
 import joblib
 import math
+import csv
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -126,6 +127,7 @@ def calAQICO(CO):
         coi2 = ((300 - 201) / (32000 - 24001)) * (CO - 24001) + 201
     if (CO >= 32001 and CO <= 40000):
         coi2 = ((500 - 301) / (40000 - 32001)) * (CO - 32001) + 301
+    print (coi2)
     return coi2
 
 
@@ -273,4 +275,45 @@ DispatchAverages()
 AverageDifference()
 
 
+def create_dataset(filename):
+    curr_day = 1
+    start_index = 0
+    curr_index = curr_day * hoursPerDay
 
+    file = open('{0}.csv'.format(filename), 'w')
+    writer = csv.writer(file)
+    writer.writerow(["AQI", "Class"])
+
+    while(curr_day <= dayCount):
+        airQualityDay = airQuality.iloc[start_index:curr_index]
+        dayRowCount = len(airQualityDay.index)
+        ##
+
+        timestamp = airQualityDay["Tarih"].iloc[0]
+        datetime_object = timestamp.to_pydatetime()
+        isWeekend = check_if_weekend(datetime_object)
+
+        averagePM10 = airQualityDay["PM10"].sum() / dayRowCount
+        averageSO2 = airQualityDay["SO2"].sum() / dayRowCount
+        averageCO = airQualityDay["CO"].sum() / dayRowCount
+        averageNO2 = airQualityDay["NO2"].sum() / dayRowCount
+        averageNOX = airQualityDay["NOX"].sum() / dayRowCount
+        averageNO = airQualityDay["NO"].sum() / dayRowCount
+        averageO3 = airQualityDay["O3"].sum() / dayRowCount
+        averagePM25 = airQualityDay["PM2.5"].sum() / dayRowCount
+
+
+        Date = "{0}.{1}.{2}".format(timestamp.day,timestamp.month,timestamp.year)
+        AQI = CalculateAQI(averagePM10,averageSO2,averageCO,averageNO2,averageO3,averagePM25)
+        Class = 1 if isWeekend else 0
+
+        writer.writerow([AQI, Class])
+
+        ##
+        curr_day += 1
+        start_index = curr_index
+        curr_index = curr_day * hoursPerDay
+
+    file.close()
+
+create_dataset("model_dataset")
